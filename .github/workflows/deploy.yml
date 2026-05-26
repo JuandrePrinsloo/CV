@@ -4,110 +4,37 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allow manual triggers
-
-env:
-  NODE_VERSION: '18'
 
 jobs:
   deploy:
-    name: Build and Deploy to S3
     runs-on: ubuntu-latest
-    
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: 🔧 Setup Node.js
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: 📦 Install dependencies
+          node-version: '18'
+
+      - name: Install dependencies
         run: npm ci
-      
-      - name: 🔍 Lint code
-        run: npm run lint || true  # Don't fail on lint warnings
-      
-      - name: 🏗️ Build production bundle
-        env:
-          VITE_WEB3FORMS_ACCESS_KEY: ${{ secrets.VITE_WEB3FORMS_ACCESS_KEY }}
-          VITE_GITHUB_URL: ${{ secrets.VITE_GITHUB_URL }}
-          VITE_LINKEDIN_URL: ${{ secrets.VITE_LINKEDIN_URL }}
+
+      - name: Build project
         run: npm run build
-      
-      - name: ✅ Verify build
-        run: |
-          echo "Checking build output..."
-          if [ ! -f "dist/index.html" ]; then
-            echo "❌ Build failed - index.html not found"
-            exit 1
-          fi
-          echo "✅ Build verified"
-          echo "📊 Build size: $(du -sh dist | cut -f1)"
-          
-          # Verify Web3Forms integration
-          if grep -r "web3forms" dist/assets/*.js > /dev/null 2>&1; then
-            echo "✅ Web3Forms integration found in build"
-          else
-            echo "⚠️ Web3Forms not found in build (check env variable)"
-          fi
-      
-      - name: 🔐 Configure AWS credentials
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      
-      - name: 🚀 Deploy to S3
-        run: |
-          echo "Deploying to S3 bucket: ${{ secrets.S3_BUCKET_NAME }}"
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }}/ --delete
-          echo "✅ Deployment complete!"
-      
-      - name: ♻️ Invalidate CloudFront cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        run: |
-          echo "Invalidating CloudFront distribution: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
-          echo "✅ Cache invalidation created (takes 5-15 minutes)"
-      
-      - name: 📊 Deployment Summary
-        run: |
-          echo "================================================"
-          echo "🎉 DEPLOYMENT SUCCESSFUL!"
-          echo "================================================"
-          echo ""
-          echo "📦 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
-          echo "🌐 Region: ${{ secrets.AWS_REGION || 'us-east-1' }}"
-          echo "📊 Build Size: $(du -sh dist | cut -f1)"
-          echo ""
-          echo "🔗 Your site should be live at:"
-          echo "   http://${{ secrets.S3_BUCKET_NAME }}.s3-website-${{ secrets.AWS_REGION || 'us-east-1' }}.amazonaws.com"
-          echo ""
-          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            echo "☁️ CloudFront: Cache invalidating (wait 5-15 min)"
-          fi
-          echo ""
-          echo "✅ Next: Test your contact form!"
-      
-      - name: 💬 Comment on commit
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const bucketName = '${{ secrets.S3_BUCKET_NAME }}';
-            const region = '${{ secrets.AWS_REGION || 'us-east-1' }}';
-            const url = `http://${bucketName}.s3-website-${region}.amazonaws.com`;
-            
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `🚀 **Deployment Successful!**\n\n✅ Deployed to S3\n🌐 [View Site](${url})\n⏱️ Deployed at: ${new Date().toISOString()}`
-            });
+          aws-region: af-south-1
 
+      - name: Sync to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
+          AWS_REGION: af-south-1
+          SOURCE_DIR: dist
