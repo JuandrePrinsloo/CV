@@ -1,0 +1,114 @@
+╔════════════════════════════════════════════════════════════╗
+║          🚀 S3 DEPLOYMENT QUICK REFERENCE                  ║
+╚════════════════════════════════════════════════════════════╝
+
+📦 IMPORTANT: Environment variables must be set BEFORE building!
+   (Vite bakes them into the JavaScript at build time)
+
+═══════════════════════════════════════════════════════════
+
+🔧 OPTION 1: MANUAL DEPLOYMENT (Fastest for testing)
+
+   1. Set environment variable:
+      PowerShell:
+      $env:VITE_WEB3FORMS_ACCESS_KEY="your-key-here"
+      
+      Bash:
+      export VITE_WEB3FORMS_ACCESS_KEY="your-key-here"
+
+   2. Build:
+      npm run build
+
+   3. Upload to S3:
+      aws s3 sync dist/ s3://your-bucket-name/ --delete
+
+   4. Clear CloudFront cache (if using):
+      aws cloudfront create-invalidation --distribution-id YOUR_ID --paths "/*"
+
+═══════════════════════════════════════════════════════════
+
+🤖 OPTION 2: USE DEPLOYMENT SCRIPT (Recommended)
+
+   PowerShell:
+   $env:VITE_WEB3FORMS_ACCESS_KEY="your-key"
+   .\deploy-to-s3.ps1 -BucketName "your-bucket"
+
+   Bash:
+   VITE_WEB3FORMS_ACCESS_KEY="your-key" ./deploy-to-s3.sh your-bucket
+
+═══════════════════════════════════════════════════════════
+
+⚡ OPTION 3: GITHUB ACTIONS (Best for continuous deployment)
+
+   1. Add secrets in GitHub: Settings → Secrets → Actions
+      - VITE_WEB3FORMS_ACCESS_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - S3_BUCKET_NAME
+      - CLOUDFRONT_DISTRIBUTION_ID (optional)
+      - AWS_REGION (optional, default: us-east-1)
+
+   2. Push to main branch:
+      git push origin main
+
+   3. Auto-deploys! ✨
+
+═══════════════════════════════════════════════════════════
+
+🧪 VERIFY DEPLOYMENT:
+
+   1. Visit: http://your-bucket.s3-website-us-east-1.amazonaws.com
+   2. Test contact form
+   3. Check email inbox (should arrive in ~30 seconds)
+   4. Open browser DevTools → Network tab
+   5. Submit form → look for "api.web3forms.com" request
+
+═══════════════════════════════════════════════════════════
+
+❌ TROUBLESHOOTING:
+
+   Form not working after deploy?
+   → Environment variable not set during build
+   → Rebuild with: $env:VITE_WEB3FORMS_ACCESS_KEY="your-key"
+   → Then: npm run build
+
+   Check if Web3Forms is in build:
+   → Search dist/assets/*.js files for "web3forms"
+   → Or use: Select-String -Path "dist/assets/*.js" -Pattern "web3forms"
+
+═══════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION:
+
+   → S3_DEPLOYMENT_GUIDE.md (Complete guide)
+   → deploy-to-s3.ps1 (PowerShell script)
+   → deploy-to-s3.sh (Bash script)
+   → .github/workflows/deploy.yml (GitHub Actions)
+   → buildspec.yml (AWS CodeBuild)
+
+═══════════════════════════════════════════════════════════
+
+✅ CHECKLIST:
+
+   [ ] Web3Forms access key obtained
+   [ ] AWS CLI installed and configured
+   [ ] S3 bucket created
+   [ ] Bucket configured for static website hosting
+   [ ] Environment variable set
+   [ ] Build created (npm run build)
+   [ ] Uploaded to S3
+   [ ] Tested contact form
+   [ ] Email received instantly
+
+═══════════════════════════════════════════════════════════
+
+💡 PRO TIPS:
+
+   • Use CloudFront for HTTPS + faster loads
+   • Enable S3 versioning for easy rollback
+   • Set up GitHub Actions for auto-deploy
+   • Keep .env in .gitignore (already done!)
+   • Test locally first: npm run preview
+
+═══════════════════════════════════════════════════════════
+

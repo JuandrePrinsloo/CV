@@ -1,0 +1,37 @@
+╔════════════════════════════════════════════════════════════╗
+║                 🚀 QUICK SETUP REFERENCE                   ║
+╚════════════════════════════════════════════════════════════╝
+
+📧 GET ACCESS KEY (30 seconds):
+   → https://web3forms.com/
+   → Enter: juandreprinsloo@gmail.com
+   → Copy the key from your email
+
+⚙️  ADD TO .env FILE:
+   VITE_WEB3FORMS_ACCESS_KEY=paste-your-key-here
+
+🔄 RESTART SERVER:
+   npm run dev
+
+✅ TEST:
+   Fill out contact form → Check email → Should arrive INSTANTLY!
+
+═══════════════════════════════════════════════════════════
+
+💡 BEFORE vs AFTER:
+
+   BEFORE (Formspree Free):
+   ✉️  Message → Wait 30 days → Email arrives 😴
+
+   AFTER (Web3Forms):
+   ✉️  Message → Instant delivery! ⚡
+
+═══════════════════════════════════════════════════════════
+
+🎯 RESULT: No more 30-day delays!
+
+📚 Full docs: See WEB3FORMS_SETUP.md
+🆘 Problems? Check spam folder first!
+
+═══════════════════════════════════════════════════════════
+

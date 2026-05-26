@@ -1,0 +1,97 @@
+version: 0.2
+
+# AWS CodeBuild buildspec for Juandre Resume
+# Builds Vite app with Web3Forms and deploys to S3
+
+env:
+  variables:
+    NODE_VERSION: "18"
+    # Set these in CodeBuild project environment variables:
+    # - VITE_WEB3FORMS_ACCESS_KEY (required)
+    # - S3_BUCKET_NAME (required)
+    # - CLOUDFRONT_DISTRIBUTION_ID (optional)
+  
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo "Installing dependencies..."
+      - npm ci
+      - echo "Node version:" $(node --version)
+      - echo "NPM version:" $(npm --version)
+  
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - |
+        if [ -z "$VITE_WEB3FORMS_ACCESS_KEY" ]; then
+          echo "ERROR: VITE_WEB3FORMS_ACCESS_KEY not set!"
+          echo "Please add it to CodeBuild environment variables"
+          exit 1
+        fi
+      - echo "✅ Web3Forms access key found"
+      - |
+        if [ -z "$S3_BUCKET_NAME" ]; then
+          echo "ERROR: S3_BUCKET_NAME not set!"
+          exit 1
+        fi
+      - echo "✅ S3 bucket name: $S3_BUCKET_NAME"
+  
+  build:
+    commands:
+      - echo "Building production bundle..."
+      - npm run build
+      - echo "Build completed!"
+      - |
+        if [ ! -f "dist/index.html" ]; then
+          echo "ERROR: Build failed - dist/index.html not found"
+          exit 1
+        fi
+      - echo "✅ Build verified"
+      - echo "📊 Build size:" $(du -sh dist | cut -f1)
+      
+      # Verify Web3Forms integration
+      - |
+        if grep -r "web3forms" dist/assets/*.js > /dev/null 2>&1; then
+          echo "✅ Web3Forms integration found in build"
+        else
+          echo "⚠️  Web3Forms not found in build (might be minified)"
+        fi
+  
+  post_build:
+    commands:
+      - echo "Deploying to S3..."
+      - aws s3 sync dist/ s3://${S3_BUCKET_NAME}/ --delete
+      - echo "✅ Deployed to S3: s3://${S3_BUCKET_NAME}/"
+      
+      # Invalidate CloudFront cache if distribution ID is set
+      - |
+        if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+          echo "Invalidating CloudFront cache..."
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/*"
+          echo "✅ CloudFront cache invalidation created"
+        fi
+      
+      - echo "================================================"
+      - echo "🎉 DEPLOYMENT SUCCESSFUL!"
+      - echo "================================================"
+      - echo "Bucket: $S3_BUCKET_NAME"
+      - echo "Build: $(du -sh dist | cut -f1)"
+      - |
+        if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+          echo "CloudFront: $CLOUDFRONT_DISTRIBUTION_ID (cache invalidating...)"
+        fi
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: dist
+  name: juandre-resume-$(date +%Y%m%d-%H%M%S)
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+
