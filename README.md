@@ -1,4 +1,4 @@
-﻿# Vite React TypeScript Shadcn/UI Project
+# Vite React TypeScript Shadcn/UI Project
 
 A modern, full-featured React project setup with TypeScript, Tailwind CSS, and shadcn/ui components.
 
