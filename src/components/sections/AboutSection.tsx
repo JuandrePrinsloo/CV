@@ -4,7 +4,7 @@ import { Github, Linkedin, Mail } from "lucide-react";
 const AboutSection = () => {
     const [displayedText, setDisplayedText] = useState("");
     const [showCursor, setShowCursor] = useState(true);
-    const fullText = "Software Developer";
+    const fullText = "Software Engineer";
 
     useEffect(() => {
         let index = 0;
